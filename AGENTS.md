@@ -1,76 +1,35 @@
-# Agent Instructions - BBBI Mereka Brand Assets
+# AGENTS.md
 
-## Workflow Rules
+## Repository Overview
+Brand assets and guidelines for Mereka and Biji-Biji Initiative. Contains logos, color palettes, typography, and brand documentation.
 
-1. **Read CLAUDE.md first** - Understand asset organization
-2. **Maintain structure** - Follow existing directory conventions
-3. **Update guides** - Keep MD/YAML/JSON in sync with PDF
-4. **URL-encode spaces** - Legacy filenames may contain spaces
-5. **Commit work** - Push changes before ending session
+## Structure
+- `logos/` — Logo variants (SVG, PNG, different sizes)
+- `colors/` — Color palettes and hex codes
+- `typography/` — Font files and typography guidelines
+- `guidelines/` — Brand guidelines (PDF, Markdown)
+- `templates/` — Design templates for common use cases
 
-## Session End Checklist
+## Naming Conventions
+- Logo files: `mereka-logo-{variant}-{size}.{ext}`
+- Color files: `mereka-colors-{theme}.json`
+- Use lowercase with hyphens for all file names
 
-```bash
-git status && git add -A && git commit -m "..."
-git push
-```
+## Boundaries
+- ✅ Always: Use approved assets only, follow naming conventions, check guidelines before use
+- ⚠️ Ask First: Any new asset additions, guideline modifications, archive operations
+- 🚫 Never: Modify master logo files, delete archived assets, commit unapproved variations
 
-## Common Tasks
+## Approval Process
+New assets or guideline changes require:
+1. Review by brand steward
+2. Approval via pull request
+3. Update to changelog in `guidelines/CHANGELOG.md`
 
-| Task | Location |
-|------|----------|
-| Add new logo | `brands/{brand}/logos/{png,svg}/` |
-| Update colors | `brands/{brand}/colors/` |
-| Edit brand guide | `brands/{brand}/guides/` |
-| Add favicon sizes | `brands/{brand}/icons/favicon/` |
+## Asset Usage
+- Always use SVG for web when possible
+- Use PNG for email and documents
+- Check `guidelines/usage.md` for correct logo usage
 
-## Landing the Plane (Session Completion)
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-
-## Specs & Docs Convention
-
-This project uses the **specs-vs-docs** convention from [team-skills](https://github.com/Biji-Biji-Initiative/team-skills).
-
-### Quick Reference
-- **Specs** (testable contracts): `specs/` — define WHAT MUST BE TRUE
-- **Docs** (explanations): `docs/` — explain what IS and HOW TO USE IT
-- **Config**: `specdocs.config.yml`
-
-### Rules
-- Before implementing any feature, check if a spec exists in `specs/`
-- Specs use normative language: MUST, SHOULD, MAY (RFC 2119)
-- Acceptance Criteria use stable IDs: `AC-001`, `AC-002`, etc.
-- Each AC maps to a verification method (automated/monitoring/manual)
-
-### Key Tools
-| Tool | Purpose |
-|------|---------|
-| `spec_lint.py specs/` | Lint specs for structure compliance |
-| `spec_verify.py specs/` | Verify AC-IDs + testmap coverage |
-| `spec_fix.py specs/ --add-ac-ids` | Bulk-add AC-IDs to checkboxes |
-
-### Spec Template
-New specs should follow `specs/_TEMPLATE.md`. Required sections: Scope, Non-goals, Requirements, Acceptance Criteria, Edge Cases, Observability, Rollout & Rollback, Open Questions.
+---
+Last updated: 2026-03-02
