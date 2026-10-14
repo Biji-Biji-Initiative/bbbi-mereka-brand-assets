@@ -8,8 +8,7 @@
 // engraved on a glass top plate above them, and each puck is a lamp that shines straight up:
 // its disc of light lands on the glass at the puck's exact x, y. When the gear train brings
 // all four arms home together, the four discs of light fill the engraved mark exactly.
-import { writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { k, kitScript, glScript, kitPath, logo, FREE, writePages, BRAND } from "../shared.mjs";
 
@@ -82,6 +81,7 @@ const GLASS_T = 2.4;
 const GLASS_TOP = GLASS_Z + GLASS_T;
 const GLASS_R = 140;
 const PILLAR_RING = 134;
+const RING = [100, 122, 2.2]; // degree ring on the deck: inner, outer radius, height
 const PILLARS = [162, 252, 342].map((d) => (d * Math.PI) / 180);
 
 // Drive: a motor turns a worm; the worm turns a 20-tooth worm wheel on the layshaft.
@@ -311,21 +311,47 @@ function base() {
   const screws = Array.from({ length: 12 }, (_, i) => polar(BASE_R - 6.2, (i * TAU) / 12));
   out.push(Ln(screws.map(([x, y]) => k.ring(x, y, 2.2, 0, P, 16)).join(""), { tone: "lo" }));
   out.push(DOTS_MID(screws.map(([x, y]) => [x, y, 0]), 0.55));
-  out.push(Ln(k.ring(0, 0, 124, 0, P, 160) + k.ring(0, 0, 60, 0, P, 120), { tone: "faint" }));
-  // Engraved degree marks on the deck between the two orbit rings: every 10°, a major every 90°.
-  const ticks = k.radialTicks(0, 0, 124, 36, 9, 0, [2.2, 4.2], P);
-  out.push(Ln(ticks.minor, { tone: "faint" }), Ln(ticks.major, { tone: "lo" }));
+  // The degree ring under the orbit: a raised brass annulus screwed to the deck, its hole
+  // showing the deck and the far half of its own inner wall.
+  const [r0, r1, h] = RING;
+  out.push(S(k.cylinder(0, 0, r1, 0, h, P, 180, 0.6), { tone: "mid", inner: Ln(k.sideArc(0, 0, r1, h * 0.45, P, 120), { tone: "faint" }) }));
+  out.push(`<path class="iso-top" d="${k.ring(0, 0, r0, h, P, 180)}"/>`);
+  const [vx, vy] = k.towardViewer(P);
+  const face = Math.atan2(vy, vx);
+  const far = (z) => Array.from({ length: 97 }, (_, i) => { const a = face + Math.PI / 2 + (i / 96) * Math.PI; return at([r0 * Math.cos(a), r0 * Math.sin(a), z]); });
+  const wallTop = far(h), wallBottom = far(0);
+  out.push(`<path class="iso-shade" data-shade="1" d="${k.pathOf([...wallTop, ...wallBottom.reverse()], true)}"/>`);
+  out.push(Ln(k.pathOf(far(0)), { tone: "faint" }));
+  out.push(Ln(k.ring(0, 0, r0, h, P, 180), { tone: "lo" }));
+  out.push(Ln(k.ring(0, 0, 60, 0, P, 120), { tone: "faint" }));
+  // scale: a ruled line near the outer edge, ticks hanging inward every 5°, a major every 30°
+  out.push(Ln(k.ring(0, 0, r1 - 2.2, h, P, 180) + k.ring(0, 0, r1 - 7.6, h, P, 180), { tone: "lo" }));
+  const ticks = k.radialTicks(0, 0, r1 - 2.2, 72, 6, h, [2.6, 5.4], P);
+  out.push(Ln(ticks.minor, { tone: "lo" }), Ln(ticks.major, { tone: "mid" }));
+  const rivets = Array.from({ length: 12 }, (_, i) => polar(r0 + 3.4, (i * TAU) / 12 + Math.PI / 12));
+  out.push(D(rivets.map(([x, y]) => at([x, y, h])), { size: 0.5, tone: "mid" }));
+  out.push(badge());
   return out.join("");
 }
 
-function label() {
-  const plan = { x: -40, y: 110, w: 36, d: 14, r: 1.6 };
-  const out = [S(k.slabOf(plan, 0, 1.0, P, 3, 0.4), { tone: "mid" })];
-  out.push(Ln(k.planOutline(k.insetPlan(plan, 1.6), 1.0, P, 3), { tone: "faint" }));
-  out.push(k.faceTextSvg(k.topMatrix([plan.x + 4.2, plan.y + 7.2], 1.0, P, "x"), "MEREKA", { size: 4.6, tone: "hi" }));
-  const rules = [10.2, 12.4].map((dy, n) => k.lineOnTop([plan.x + 4.2, plan.y + dy], [plan.x + (n ? 22 : 30), plan.y + dy], 1.0, P)).join("");
-  out.push(Ln(rules, { tone: "lo", free: true }));
-  out.push(D([at([plan.x + plan.w - 3.4, plan.y + 3.4, 1]), at([plan.x + plan.w - 3.4, plan.y + plan.d - 3.4, 1])], { size: 0.45 }));
+// The maker's badge: a thin curved plate on the plinth's front face, its text set in the face.
+function badge() {
+  const [vx, vy] = k.towardViewer(P);
+  const face = Math.atan2(vy, vx);
+  const span = 0.13, z0 = PLINTH[0] + 2.4, z1 = PLINTH[1] - 2.4;
+  const ring = [];
+  for (let i = 0; i <= 16; i++) ring.push(polar(PLINTH_R + 0.7, face - span + (i / 16) * span * 2));
+  for (let i = 16; i >= 0; i--) ring.push(polar(PLINTH_R - 0.4, face - span + (i / 16) * span * 2));
+  const out = [prismSvg(ring, z0, z1 - z0, "mid", "faint", "", false)];
+  const p = polar(PLINTH_R + 0.7, face);
+  const t = [Math.cos(face - Math.PI / 2), Math.sin(face - Math.PI / 2)];
+  const o = at([p[0], p[1], z1 - 3.4]);
+  const u = at([p[0] + t[0], p[1] + t[1], z1 - 3.4]), v = at([p[0], p[1], z1 - 4.4]);
+  const m = (n) => (Math.round(n * 1000) / 1000).toString();
+  const matrix = `matrix(${m(u[0] - o[0])} ${m(u[1] - o[1])} ${m(v[0] - o[0])} ${m(v[1] - o[1])} ${m(o[0])} ${m(o[1])})`;
+  out.push(k.faceTextSvg(matrix, "MEREKA", { size: 3.4, tone: "hi", anchor: "middle" }));
+  const ends = [-1, 1].map((sgn) => { const q = polar(PLINTH_R + 0.7, face + sgn * (span - 0.018)); return at([q[0], q[1], (z0 + z1) / 2]); });
+  out.push(D(ends, { size: 0.5, tone: "mid" }));
   return out.join("");
 }
 
@@ -392,19 +418,26 @@ function counterIndex() {
 
 function pillar(a) {
   const [x, y] = polar(PILLAR_RING, a);
-  return [
+  return '<g class="or-brass">' + [
     S(k.cylinder(x, y, 6, 0, 3, P, 32, 0.4), { tone: "lo" }),
     S(k.cylinder(x, y, 2.8, 3, FLANGE[0] - 3, P, 24), { tone: "mid", crease: "none", inner: Ln(k.sideArc(x, y, 2.8, 12, P, 16) + k.sideArc(x, y, 2.8, 50, P, 16), { tone: "faint" }) }),
     S(k.cylinder(x, y, 4.6, FLANGE[0], GLASS_Z - FLANGE[0], P, 28, 0.3), { tone: "mid" }),
-  ].join("");
+  ].join("") + "</g>";
 }
 
 // ---- The glass: back half (under the light) and front half (engraving over it) --
 const R1 = (v) => Math.round(v * 10) / 10;
 function glassBack() {
   const side = k.cylinder(0, 0, GLASS_R, GLASS_Z, GLASS_T, P, 180);
-  return `<g class="or-glass"><path class="or-glass-side" d="${side.shades.join("")}"/><path class="or-glass-top" d="${k.ring(0, 0, GLASS_R, GLASS_TOP, P, 200)}"/>` +
+  const rim = k.circleRing(0, 0, GLASS_R, 72).map(([x, y]) => at([x, y, GLASS_TOP]));
+  const xs = rim.map((p) => p[0]), ys = rim.map((p) => p[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const stops = [[0, 0], [0.34, 0], [0.42, 0.05], [0.5, 0], [0.57, 0], [0.61, 0.028], [0.67, 0], [1, 0]]
+    .map(([o, a]) => `<stop offset="${o}" stop-opacity="${a}" style="stop-color:var(--or-sheen-c)"/>`).join("");
+  const sheen = `<defs><linearGradient id="or-sheen" gradientUnits="userSpaceOnUse" x1="${R1(x0)}" y1="${R1(y0)}" x2="${R1(x1)}" y2="${R1(y1)}">${stops}</linearGradient></defs>`;
+  return sheen + `<g class="or-glass"><path class="or-glass-side" d="${side.shades.join("")}"/><path class="or-glass-top" d="${k.ring(0, 0, GLASS_R, GLASS_TOP, P, 200)}"/>` +
     `<path class="or-frost" d="${k.onTop(BODY, GLASS_TOP, P, true)}"/><path class="or-frost" d="${k.ring(DOTS[FREE][0], DOTS[FREE][1], DOT_R, GLASS_TOP, P, 96)}"/>` +
+    `<path class="or-sheen" d="${k.ring(0, 0, GLASS_R - 1.2, GLASS_TOP, P, 200)}"/>` +
     `<path class="or-body-lit" d="${k.onTop(BODY, GLASS_TOP, P, true)}${k.ring(DOTS[FREE][0], DOTS[FREE][1], DOT_R, GLASS_TOP, P, 96)}"/></g>`;
 }
 function glassFront() {
@@ -519,13 +552,6 @@ function gearAngle(spec, A) {
   return A.dial + PHASE[spec.name];
 }
 
-// Paint order of the gear train: by level band, then far to near within a band.
-const BANDS = [
-  { z: COUNTER.z[0], items: ["counter-pinion", "counter-wheel"] },
-  { z: WORM_WHEEL.z[0], items: ["worm-wheel"] },
-  ...GEAR_Z.map((z, g) => ({ z, items: [`wheel-${BY_LEVEL[3 - g]}`, `pinion-${BY_LEVEL[3 - g]}`] })),
-];
-
 // ---- Assemble the back SVG --------------------------------------------------------
 const A0 = anglesAt(DRIVE0);
 const PROJ = P;
@@ -537,7 +563,7 @@ const VIEW = [VX, VY];
 function gearGroup(spec) {
   const a = gearAngle(spec, A0);
   const holes = spec.holes ? gearHoles(spec.cx, spec.cy, spec.r, spec.m, spec.hub, a, spec.z + spec.h) : "";
-  return `<g data-gear="${spec.name}"><g data-teeth>${gearSvg(spec.cx, spec.cy, spec.r, spec.teeth, a, spec.m, spec.z, spec.h, spec.hub)}</g><path class="iso-line" data-tone="lo" data-holes d="${holes}"/></g>`;
+  return `<g class="or-brass" data-gear="${spec.name}"><g data-teeth>${gearSvg(spec.cx, spec.cy, spec.r, spec.teeth, a, spec.m, spec.z, spec.h, spec.hub)}</g><path class="iso-line" data-tone="lo" data-holes d="${holes}"/></g>`;
 }
 const specOf = Object.fromEntries(gearSpecs.map((s) => [s.name, s]));
 
@@ -555,7 +581,6 @@ function layshaft() {
 function backSvg() {
   const out = [];
   out.push(base());
-  out.push(label());
   for (const a of pillarsFar) out.push(pillar(a));
   // counter dial: wheel + face rotate together; drawn first (lowest), then its index finger
   // column foot boss
@@ -568,8 +593,15 @@ function backSvg() {
   const cOrder = byDepth(["counter-pinion", "counter-idler", "counter-wheel"], (n) => [specOf[n].cx, specOf[n].cy]);
   out.push(lay.seg(3, COUNTER.z[0]));
   for (const n of cOrder) {
-    if (n === "counter-wheel") out.push(`<g data-gear="counter-wheel">${counterWheelSvg(A0.dial)}</g>`);
-    else out.push(gearGroup(specOf[n]));
+    if (n === "counter-wheel") {
+      out.push(S(k.cylinder(DIAL[0], DIAL[1], 2.6, RING[2], COUNTER.z[0] - RING[2], P, 20), { tone: "mid", crease: "none" }));
+      out.push(`<g class="or-brass" data-gear="counter-wheel">${counterWheelSvg(A0.dial)}</g>`);
+      out.push(S(k.cylinder(DIAL[0], DIAL[1], 2.2, COUNTER.face[1], 0.7, P, 20, 0.2), { tone: "mid" }) + D([at([DIAL[0], DIAL[1], COUNTER.face[1] + 0.7])], { size: 0.5 }));
+    } else if (n === "counter-idler") {
+      out.push(S(k.cylinder(IDLER[0], IDLER[1], 2.4, 0, COUNTER.z[0], P, 20), { tone: "mid", crease: "none" }));
+      out.push(gearGroup(specOf[n]));
+      out.push(S(k.cylinder(IDLER[0], IDLER[1], 3.4, COUNTER.z[1], 0.7, P, 24, 0.2), { tone: "mid" }) + D([at([IDLER[0], IDLER[1], COUNTER.z[1] + 0.7])], { size: 0.5 }));
+    } else out.push(gearGroup(specOf[n]));
   }
   out.push(counterIndex());
   out.push(lay.seg(COUNTER.z[1], WORM_WHEEL.z[0]));
@@ -599,9 +631,9 @@ function backSvg() {
   for (let level = 0; level < 4; level++) {
     const i = BY_LEVEL[level];
     const [h0, h1] = HUB(level);
-    out.push(`<g data-arm-back="${level}"></g>`);
-    out.push(S(k.cylinder(0, 0, HUB_R[level], h0, h1 - h0, P, 48, 0.4), { tone: "mid", inner: Ln(k.sideArc(0, 0, HUB_R[level], h0 + 0.9, P, 32), { tone: "faint" }) }));
-    out.push(`<g data-arm-front="${level}"></g>`);
+    out.push(`<g class="or-brass" data-arm-back="${level}"></g>`);
+    out.push(`<g class="or-brass">${S(k.cylinder(0, 0, HUB_R[level], h0, h1 - h0, P, 48, 0.4), { tone: "mid", inner: Ln(k.sideArc(0, 0, HUB_R[level], h0 + 0.9, P, 32), { tone: "faint" }) })}</g>`);
+    out.push(`<g class="or-brass" data-arm-front="${level}"></g>`);
     out.push(`<g data-puck-slot="${level}-back"></g>`);
     const z1 = level < 3 ? HUB(level + 1)[0] : FLANGE[0];
     const r = level < 3 ? TUBE_R[level + 1] : SPINDLE_R;
@@ -649,7 +681,9 @@ function puckSvg(i) {
   const lit = i === FREE;
   const out = [];
   out.push(S(k.cylinder(0, 0, 5, z - PEDESTAL_H, PEDESTAL_H, P, 28), { tone: "mid" }));
-  out.push(S(k.cylinder(0, 0, DOT_R, z, PUCK_T, P, 128, 0.6), { tone: "hi", crease: "lo", lit, inner: Ln(k.sideArc(0, 0, DOT_R, z + 1.1, P, 64), { tone: "faint" }) }));
+  // the puck's rim is knurled below a plain band, like a bezel you could turn by hand
+  const knurl = k.knurl(0, 0, DOT_R, z, z + 1.5, 150, P, 0.25);
+  out.push(S(k.cylinder(0, 0, DOT_R, z, PUCK_T, P, 128, 0.6), { tone: "hi", crease: "lo", lit, inner: Ln(knurl, { tone: "faint" }) + Ln(k.sideArc(0, 0, DOT_R, z + 1.5, P, 64), { tone: "lo" }) }));
   const top = z + PUCK_T;
   out.push(Ln(k.ring(0, 0, DOT_R - 3.6, top, P, 120), { tone: lit ? "mid" : "lo" }));
   // the lamp lens: a raised frosted disc with two rings, held by eight screws in the bezel
@@ -741,7 +775,7 @@ void main(){
   float rad=length(p);
   float onGlass=1.-smoothstep(uGeo.y-16.,uGeo.y-8.,rad);
   if(onGlass<=0.){gl_FragColor=vec4(0.);return;}
-  float sw=.3/uK;
+  float sw=.5/uK; // half the engraving's 1 px stroke, in world units
   // lamps: a soft disc of the dot's exact radius over each planet, softer the deeper it sits
   float lamp=0.;float core=0.;
   for(int k=0;k<4;k++){
@@ -777,7 +811,9 @@ void main(){
   vec2 hf=uHome[3].xy;
   float sf=length(p-hf)-R;
   float s=min(sb,sf);
-  float fill=1.-smoothstep(-sw,.6*sw,s);
+  // the light runs right up under the engraved stroke and spreads a little past it in the glass,
+  // so its edge is soft at any zoom and the stroke carries the crisp outline
+  float fill=1.-smoothstep(-sw-.4*px,2.4+1.2*px,s);
   float rimIn=fill*exp(-max(-s-sw,0.)/2.6);
   float e=0.;
   for(int k=0;k<4;k++){e+=exp(-(length(p-uHome[k].xy)-R)/14.);}
@@ -786,10 +822,10 @@ void main(){
   float flow=1.-smoothstep(front-22.,front,f);
   float body=uGlow.y*flow*(.42*fill+.95*rimIn)+uGlow.w*fill*.55;
   // energies to light
-  vec3 lampHue=vec3(.42,.86,.84);
+  vec3 lampHue=vec3(.22,.72,.71);
   vec3 trailHue=vec3(.30,.86,.84);
   vec3 bodyHue=vec3(.20,.70,.71);
-  vec3 dark=lampHue*lamp*.62+vec3(.8,1.,1.)*core*.55+trailHue*trail*.75+bodyHue*body*1.15;
+  vec3 dark=lampHue*lamp*.8+vec3(.7,1.,.98)*core*.5+trailHue*trail*.75+bodyHue*body*1.15;
   dark=tonemap(dark,1.2)*onGlass;
   float m=max(dark.r,max(dark.g,dark.b));
   float n=(hash12(gl_FragCoord.xy+fract(uTime*.61)*91.)+hash12(gl_FragCoord.yx*1.37+fract(uTime*.37)*57.)-1.)/255.;
@@ -797,7 +833,9 @@ void main(){
   darkInk.a=max(darkInk.r,max(darkInk.g,darkInk.b));
   // paper: a saturated teal body with a pale core, inks solved from what the paper should show
   float eb=1.-exp(-1.6*body);
-  vec3 bodySeen=mix(mix(vec3(1.),vec3(.16,.55,.56),smoothstep(.0,.55,eb)),vec3(.80,.95,.94),smoothstep(.75,1.,eb)*.6);
+  // a saturated teal rim round a paler body: light held in the glass, not paint on it
+  vec3 teal=mix(vec3(.16,.55,.56),vec3(.52,.80,.80),(1.-min(rimIn*1.4,1.))*.5*fill);
+  vec3 bodySeen=mix(mix(vec3(1.),teal,smoothstep(.0,.55,eb)),vec3(.84,.96,.95),smoothstep(.8,1.,eb)*.5);
   vec4 bodyInk=inkFor(bodySeen,.0)*smoothstep(0.,.08,eb);
   float el=1.-exp(-1.4*lamp);
   vec3 lampSeen=mix(vec3(1.),vec3(.62,.86,.86),smoothstep(0.,.7,el));
@@ -819,24 +857,6 @@ const lifted = (i, n) => {
   const a = anglesAt(n).arms[i];
   return [ORBIT[i] * Math.cos(a), ORBIT[i] * Math.sin(a)];
 };
-function fillSlots(markup) {
-  let out = markup;
-  for (let level = 0; level < 4; level++) {
-    const i = BY_LEVEL[level];
-    const parts = armParts(level, A0.arms[i]);
-    out = out.replace(`<g data-arm-back="${level}"></g>`, `<g data-arm-back="${level}">${parts.back}</g>`);
-    out = out.replace(`<g data-arm-front="${level}"></g>`, `<g data-arm-front="${level}">${parts.front}</g>`);
-    const [x, y] = lifted(i, DRIVE0);
-    const side = nearHalf([x, y]) ? "front" : "back";
-    out = out.replace(`<g data-puck-slot="${level}-${side}"></g>`, `<g data-puck-slot="${level}-${side}"><g data-puck="${i}" transform="${k.translateAlong(P, [x, y, 0])}">${puckSvg(i)}</g></g>`);
-  }
-  const discs = DOTS.map((_, i) => {
-    const [x, y] = lifted(i, DRIVE0);
-    return `<path data-fall="${i}" d="${fallbackDisc}" transform="${k.translateAlong(P, [x, y, 0])}"/>`;
-  }).join("");
-  return out.replace("</g></svg>", `</g><g class="or-fallback">${discs}</g></svg>`);
-}
-
 const backMarkup = k.figureSvg({
   width: WIDTH,
   height: HEIGHT,
@@ -853,11 +873,11 @@ let backFinal = backFilled;
 for (let level = 0; level < 4; level++) {
   const i = BY_LEVEL[level];
   const parts = armParts(level, A0.arms[i]);
-  backFinal = backFinal.replace(`<g data-arm-back="${level}"></g>`, `<g data-arm-back="${level}">${parts.back}</g>`);
-  backFinal = backFinal.replace(`<g data-arm-front="${level}"></g>`, `<g data-arm-front="${level}">${parts.front}</g>`);
+  backFinal = backFinal.replace(`<g class="or-brass" data-arm-back="${level}"></g>`, `<g class="or-brass" data-arm-back="${level}">${parts.back}</g>`);
+  backFinal = backFinal.replace(`<g class="or-brass" data-arm-front="${level}"></g>`, `<g class="or-brass" data-arm-front="${level}">${parts.front}</g>`);
   const [x, y] = lifted(i, DRIVE0);
   const side = nearHalf([x, y]) ? "front" : "back";
-  backFinal = backFinal.replace(`<g data-puck-slot="${level}-${side}"></g>`, `<g data-puck-slot="${level}-${side}"><g data-puck="${i}" transform="${k.translateAlong(P, [x, y, 0])}">${puckSvg(i)}</g></g>`);
+  backFinal = backFinal.replace(`<g data-puck-slot="${level}-${side}"></g>`, `<g data-puck-slot="${level}-${side}"><g class="or-brass" data-puck="${i}" transform="${k.translateAlong(P, [x, y, 0])}">${puckSvg(i)}</g></g>`);
 }
 const frontMarkup = `<svg xmlns="http://www.w3.org/2000/svg" class="iso-svg or-layer or-front" viewBox="0 0 ${WIDTH} ${HEIGHT}" aria-hidden="true">${glassFront()}</svg>`;
 const STAGE = `<div class="or-stage" tabindex="0" role="slider" aria-label="Mereka orrery: hover or drag across to turn the drive; arrow keys step a twelfth of a turn, Space or End jumps to the next alignment, Home to the last" aria-valuemin="0" aria-valuemax="6" aria-valuenow="${DRIVE0}">${backFinal}<canvas class="or-layer or-gl" aria-hidden="true"></canvas>${frontMarkup}<span class="or-said" aria-live="polite"></span></div>`;
@@ -869,9 +889,15 @@ const CSS = `
 .or-stage>.or-layer{position:absolute;inset:0;height:100%!important;pointer-events:none}
 .iso:not([data-theme="light"]) .or-gl{mix-blend-mode:screen}
 .or-said{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.iso-figure{--or-glass:rgba(170,225,228,.045);--or-glass-edge:rgba(170,225,228,.11);--or-frost:rgba(205,240,240,.045);--or-lit-fill:#2d898b;--or-lamp:#7fd3d1}
-.iso[data-theme="light"] .iso-figure{--or-glass:rgba(110,160,166,.075);--or-glass-edge:rgba(100,150,156,.2);--or-frost:rgba(255,255,255,.4);--or-lit-fill:#2d898b;--or-lamp:#2d898b}
+.iso-figure{--or-engrave:#77878a;--or-glass:rgba(170,225,228,.045);--or-glass-edge:rgba(170,225,228,.11);--or-frost:rgba(205,240,240,.045);--or-lit-fill:#2d898b;--or-lamp:#7fd3d1}
+.iso[data-theme="light"] .iso-figure{--or-engrave:#9aa5a8;--or-glass:rgba(110,160,166,.075);--or-glass-edge:rgba(100,150,156,.2);--or-frost:rgba(255,255,255,.4);--or-lit-fill:#2d898b;--or-lamp:#2d898b}
+.or-brass{--anatomy-top:#24211b;--anatomy-shade-0:#13110d;--anatomy-shade-1:#171410;--anatomy-shade-2:#1b1813;--anatomy-shade-3:#1f1c16;--anatomy-hi:#ddd2b6;--anatomy-mid:#857a62;--anatomy-lo:#4c4637;--anatomy-faint:#332f25}
+.iso[data-theme="light"] .or-brass{--anatomy-top:#fbf7ec;--anatomy-shade-0:#e0d7c2;--anatomy-shade-1:#e8e0cd;--anatomy-shade-2:#efe8d8;--anatomy-shade-3:#f5f0e3;--anatomy-hi:#3b3527;--anatomy-mid:#968a6c;--anatomy-lo:#bfb397;--anatomy-faint:#dbd1ba}
+.or-engrave .iso-line{stroke-width:1px;stroke:var(--or-engrave)}
 .or-glass-top{fill:var(--or-glass);stroke:none}
+.or-sheen{fill:url(#or-sheen);stroke:none;opacity:var(--or-sheen-o)}
+.iso-figure{--or-sheen-o:.9;--or-sheen-c:#e8fbfb}
+.iso[data-theme="light"] .iso-figure{--or-sheen-o:0}
 .or-glass-side{fill:var(--or-glass-edge);stroke:none}
 .or-frost{fill:var(--or-frost);stroke:none}
 .or-body-lit{fill:var(--or-lit-fill);stroke:none;opacity:calc(var(--or-align,0)*.55)}
@@ -947,18 +973,18 @@ const drive = { x: n, v: 0 };
 let follow = 0.4;
 const env = { lamps: { x: still.matches ? 1 : 0, v: 0 }, align: { x: 0, v: 0 }, flow: { x: 0, v: 0 } };
 let bloomAt = -1e9, bloomed = false, clock = 0;
-let drawn = null, alignedSaid = null;
+let drawn = null, alignedSaid = null, fallDrawn = "";
 
 function place() {
   const A = anglesAt(n);
   for (const item of gearEls) {
     const g = item.g;
     const a = (g.kind === "wheel" ? A.arms[g.planet] : g.kind === "cidler" ? A.idler : A.lay) + PHASE[g.name];
-    if (g.holes && Math.abs(a - item.drawn) > 0.06 / g.r) { item.drawn = a; item.holes.setAttribute("d", gearHoles(g.cx, g.cy, g.r, g.m, g.hub, a, g.z + g.h)); }
+    if (g.holes && !(Math.abs(a - item.drawn) <= 0.06 / g.r)) { item.drawn = a; item.holes.setAttribute("d", gearHoles(g.cx, g.cy, g.r, g.m, g.hub, a, g.z + g.h)); }
     swapTeeth(item, a, g);
   }
   swapTeeth(counter, A.dial + CWHEEL.phase, counter.g);
-  if (Math.abs(A.dial - counter.drawn) > 0.002) {
+  if (!(Math.abs(A.dial - counter.drawn) <= 0.002)) {
     counter.drawn = A.dial;
     const f = counterFace(A.dial);
     counter.minor.setAttribute("d", f.minor); counter.major.setAttribute("d", f.major); counter.zero.setAttribute("d", f.zero);
@@ -983,7 +1009,7 @@ function say(A, err) {
   const phase = mod(n, PERIOD);
   const togo = PERIOD - phase;
   const deg = (err * 180) / Math.PI;
-  const text = deg < 0.05 ? "aligned · the mark is whole · drive " + (Math.round(n / PERIOD) * PERIOD % 60) + " turns" :
+  const text = deg < 0.05 ? "aligned · all four home · the mark is whole" :
     "drive " + phase.toFixed(2) + " · aligns in " + togo.toFixed(2) + " turns";
   if (readout.textContent !== text) readout.textContent = text;
   const aligned = deg < 0.05;
@@ -1003,8 +1029,14 @@ function light(A, err, dt, calm) {
   if (deg > 6) bloomed = false;
   const bloom = calm ? 0 : burst(clock - bloomAt, 0.3, 1.5);
   if (bloom > 1e-3) moving = true;
-  stage.style.setProperty("--or-align", (env.align.x * (0.4 + 0.6 * env.flow.x)).toFixed(3));
-  stage.style.setProperty("--or-lamps", env.lamps.x.toFixed(3));
+  // the SVG fallback's light, written only when it changes visibly (a custom property set on the
+  // stage restyles every path under it)
+  const fall = (env.align.x * (0.4 + 0.6 * env.flow.x)).toFixed(2) + "," + env.lamps.x.toFixed(2);
+  if (!layer && fall !== fallDrawn) {
+    fallDrawn = fall;
+    stage.style.setProperty("--or-align", fall.split(",")[0]);
+    stage.style.setProperty("--or-lamps", fall.split(",")[1]);
+  }
   if (!layer) return moving;
   const puck = new Float32Array(16), arm = new Float32Array(16), trail = new Float32Array(16);
   for (let i = 0; i < 4; i++) {
@@ -1135,7 +1167,7 @@ const plate = () => k.plateHtml({
     { mark: "edge", label: "The joined body, engraved on the glass from the brand outline" },
   ],
   caption:
-    "The four dots of the Mereka logomark as planets on a geared orrery. A motor and worm turn the layshaft; its pinions drive the four arbors through 16/32, 20/30, 20/24 and 12/36, so the planets make 3, 4, 5 and 2 turns while the drive makes 6. They lap one another on four levels and meet only once in every six turns, when the counter dial's mark reaches its index. Each planet is a lamp under the glass: at that moment its disc of light lands exactly on its place in the engraved mark, and the light runs on through the body that joins them.",
+    "The four dots of the Mereka logomark as planets on a geared orrery. A motor turns a worm, the worm a 20-tooth wheel on the layshaft, and the layshaft's pinions drive four nested arbors through 16/32, 20/30, 20/24 and 12/36, so the planets make 3, 4, 5 and 2 turns for every 6 of the drive. All four dots sit 92 units from the centre of the mark, so they share one orbit: each rides its own level and passes over or under the others. They all come home together once in six turns, when the counter dial (8, 40 and 48 teeth) brings its mark to the index. Each planet is a lamp under the engraved glass: then its disc of light lands exactly on its place in the mark, and the light runs on through the body that joins them.",
   body: STAGE,
 });
 
