@@ -510,7 +510,7 @@ turned("spindle.nose", "zaxis", SPF, [[TZ0 + 33, 13], [TZ0 + 38, 13]], { tone: "
 turned("collet", "zaxis", SPF, [[TZ0 + 16, 8], [TZ0 + 18, 11], [TZ0 + 28, 11]], { tone: "hi", crease: "lo" }, { inner: Faded(G.ribsOf(SPF, TZ0 + 18, TZ0 + 28, 11, 6, P, { fade: [0.1, 0.55] }), { tone: "lo" }) });
 {
   const flutes = G.ribsOf(SPF, TZ0, TZ0 + 10, TOOL_R, 4, P, { twist: 1.4, fade: [0.08, 0.5] });
-  const shape = record(A.disc(SPF, TZ0, TZ0 + 16, TOOL_R, { name: "endmill" }));
+  const shape = record(A.disc(SPF, Math.max(TZ0, TOP), TZ0 + 16, TOOL_R, { name: "endmill" }));
   put("endmill", "zaxis", [TX0, TY0, TZ0 + 8], `<g data-part="tool">${S(G.disc(TZ0, TZ0 + 16, TOOL_R, SPF, P, { steps: 20 }), { tone: "hi", lit: true, inner: Faded(flutes, { tone: "lit" }) + Ln(G.arcOf(SPF, TZ0 + 10, TOOL_R, P), { tone: "lit" }) })}</g>`, [shape], { bias: -0.05 });
 }
 
@@ -552,8 +552,9 @@ function chainLinks(spec, um) {
     const ang = Math.atan2(t[1], t[0]);
     if (i % 2 === 1) out.push({ kind: "body", id: "b" + i, i, p0, ang, poly: end(h - 0.7, 2), mid, s: [spec.s0 + 1.4, spec.s1 - 1.4] });
     else {
-      out.push({ kind: "bar", id: "t" + i, i, p0, ang, poly: [q(2.2, h - 2), q(len - 2.2, h - 2), q(len - 2.2, h), q(2.2, h)], mid: q(len / 2, h - 1), s: [spec.s0 + 1.4, spec.s1 - 1.4] });
-      out.push({ kind: "bar", id: "u" + i, i, p0, ang, poly: [q(2.2, -h), q(len - 2.2, -h), q(len - 2.2, -h + 2), q(2.2, -h + 2)], mid: q(len / 2, -h + 1), s: [spec.s0 + 1.4, spec.s1 - 1.4] });
+      // One crossbar, on the outside of the loop (the top of the upper run).
+      const o = -spec.dir;
+      out.push({ kind: "bar", id: "t" + i, i, p0, ang, poly: o > 0 ? [q(3.6, h - 2.7), q(len - 3.6, h - 2.7), q(len - 3.6, h - 0.7), q(3.6, h - 0.7)] : [q(3.6, -h + 0.7), q(len - 3.6, -h + 0.7), q(len - 3.6, -h + 2.7), q(3.6, -h + 2.7)], mid, s: [spec.s0 + 1.4, spec.s1 - 1.4] });
       out.push({ kind: "plate", id: "p" + i, i, p0, ang, poly: end(h, 2.4), inset: [q(2.4, -h + 2.6), q(len - 2.4, -h + 2.6), q(len - 2.4, h - 2.6), q(2.4, h - 2.6)], pins: [p0, p1], mid, s: [spec.s1 - 1.4, spec.s1] });
     }
   }
@@ -585,7 +586,7 @@ const YCHAIN = { uf: -40, dir: -1, w0: 58, R: 24, length: 176 + Math.PI * 24, co
 const YCF = G.frameOf([0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]);
 const yEnd = (ty) => ty - 96; // the moving bracket sits at the middle of the side plate
 // X chain on the beam top, in the plane y = TY − 106 … TY − 88.
-const XCHAIN = { uf: 59, dir: 1, w0: 237, R: 25, length: 88 + Math.PI * 25, count: 11, h: 14, s0: TY0 - 106, s1: TY0 - 88, s1face: TY0 - 88 };
+const XCHAIN = { uf: 44.2, dir: 1, w0: 237, R: 25, length: 100 + Math.PI * 25, count: 12, h: 14, s0: TY0 - 106, s1: TY0 - 88, s1face: TY0 - 88 };
 const XCF = G.frameOf([0, 0, 0], [0, 1, 0], [1, 0, 0], [0, 0, 1]);
 const xEnd = (tx) => tx + 44.2;
 function chainItems(name, layer, F, spec, um) {
@@ -605,8 +606,8 @@ const YTOP = YCHAIN.w0 + 2 * YCHAIN.R;
 box("ychain.fixed", "ychain", [200, YCHAIN.uf + 2.2, 51], [218, YCHAIN.uf + 12.2, 65], { tone: "hi", crease: "lo" }, { r: 0.8, extra: screwDots([[209, YCHAIN.uf + 12.2, 55], [209, YCHAIN.uf + 12.2, 61]], 0.5) });
 box("ychain.moving", "ychain", [182, yEnd(TY0) + 2.2, YTOP - 7], [218, yEnd(TY0) + 12.2, YTOP + 7], { tone: "hi", crease: "lo" }, { r: 0.8, motion: "g", extra: screwDots([[212, yEnd(TY0) + 12.2, YTOP - 3], [212, yEnd(TY0) + 12.2, YTOP + 3]], 0.5) });
 box("xchain.fixed", "xchain", [XCHAIN.uf - 12.2, XCHAIN.s0, 230], [XCHAIN.uf - 2.2, XCHAIN.s1, 244], { tone: "hi", crease: "lo" }, { r: 0.8 });
-box("xchain.arm", "zaxis", [TX0 + 42, TY0 - 88, 236], [TX0 + 48, TY0 - 52, XCHAIN.w0 + 2 * XCHAIN.R + 7], { tone: "mid" }, { r: 0.6, motion: "c", bevel: 0.3, extra: screwDots([[TX0 + 48, TY0 - 56, 244], [TX0 + 48, TY0 - 56, 262]], 0.45) });
-box("xchain.moving", "xchain", [xEnd(TX0) - 12.2, XCHAIN.s0, 280], [xEnd(TX0) - 2.2, XCHAIN.s1, XCHAIN.w0 + 2 * XCHAIN.R + 7], { tone: "hi", crease: "lo" }, { r: 0.8, motion: "c" });
+box("xchain.arm", "zaxis", [TX0 + 42, TY0 - 86, 236], [TX0 + 48, TY0 - 52, XCHAIN.w0 + 2 * XCHAIN.R + 7], { tone: "mid" }, { r: 0.6, motion: "c", bevel: 0.3, extra: screwDots([[TX0 + 48, TY0 - 56, 244], [TX0 + 48, TY0 - 56, 262]], 0.45) });
+box("xchain.moving", "xchain", [xEnd(TX0) - 12.2, XCHAIN.s0, 280], [xEnd(TX0) - 2.2, XCHAIN.s1 + 2, XCHAIN.w0 + 2 * XCHAIN.R + 7], { tone: "hi", crease: "lo" }, { r: 0.8, motion: "c" });
 
 // ---- Control box on the bench in front of the machine --------------------------------
 {
@@ -844,7 +845,7 @@ function live(D) {
           c = { el: document.createElementNS("http://www.w3.org/2000/svg", "g"), ang: NaN, p0: [0, 0] };
           cache.set(piece.id, c);
         }
-        if (Math.abs(piece.ang - c.ang) > 1e-7) {
+        if (!(Math.abs(piece.ang - c.ang) <= 1e-7)) {
           c.el.innerHTML = chainPieceSvg(KITF, G, P, F, piece);
           c.el.removeAttribute("transform");
           c.ang = piece.ang;
@@ -904,7 +905,12 @@ function live(D) {
           const dash = `${s.toFixed(2)} ${(op.len + 20).toFixed(0)}`;
           for (const el of dashes[i]) el.setAttribute("stroke-dasharray", dash);
           const tail = Math.min(s, 14);
-          fresh[i].setAttribute("stroke-dasharray", i === st.op && st.kind > 0 ? `0 ${(s - tail).toFixed(2)} ${tail.toFixed(2)} ${(op.len + 20).toFixed(0)}` : `0 ${(op.len + 20).toFixed(0)}`);
+          const on = i === st.op && st.kind > 0 && tail > 0.05;
+          fresh[i].style.display = on ? "" : "none";
+          if (on) {
+            fresh[i].setAttribute("stroke-dasharray", `${tail.toFixed(2)} ${(op.len + 40).toFixed(0)}`);
+            fresh[i].setAttribute("stroke-dashoffset", (tail - s).toFixed(2));
+          }
         }
       });
       drawn.op = st.op; drawn.s = st.s;
@@ -972,7 +978,7 @@ void main(){
   float shadow=inRect(cr.xy,STOCK,pen*.5);
   float E=uRing*(onTop*pool(pTop,L)+onSp*(1.-shadow)*pool(pSp,L));
   // Fresh groove: seen through the opening at the top, lit on its floor and dimmer on the far wall.
-  float glow=0.;
+  float glow=0.,halo=0.;
   if(near<78.)for(int i=0;i<31;i++){
     vec4 a=uTrail[i];vec4 b=uTrail[i+1];
     float h=min(a.z,b.z);
@@ -985,8 +991,14 @@ void main(){
     float dF=segD(pf.xy,a.xy,b.xy,t2);
     float floorSeen=smoothstep(TR+.7*pxF,TR-.7*pxF,dF);
     glow=max(glow,mix(a.z,b.z,t2)*open*mix(.45,1.,floorSeen));
+    halo=max(halo,mix(a.z,b.z,t)*exp(-pow(max(dTop-TR,0.)/2.6,2.)));
   }
   glow*=onTop;
+  halo*=onTop;
+  // The cutting zone: the chip–tool contact glows where the tool meets the steel.
+  float dc=length(pTop.xy-uTool.xy);
+  float eCut=uTool.w*onTop*(exp(-pow(dc/2.6,2.))+.42*exp(-pow(dc/7.,2.)));
+  float Tcut=560.+720.*clamp(eCut,0.,1.);
   // Chips: thrown off the cutting edge, falling under gravity, cooling where they land.
   vec3 chipE=vec3(0.);
   vec4 chipInk=vec4(0.);
@@ -1011,25 +1023,31 @@ void main(){
     float g=smoothstep(520.,760.,T);
     vec3 hue=chipHue(T);
     float hot=smoothstep(1050.,1250.,T)*step(age,.35);
-    chipE+=core*life*g*(hue*(.7+1.6*smoothstep(700.,1150.,T))+vec3(.6,.55,.45)*hot);
+    float ember=exp(-d*d/(9.*w*w))*landed*.35;
+    chipE+=(core+ember)*life*g*(hue*(.9+2.2*smoothstep(700.,1150.,T))+vec3(.6,.55,.45)*hot);
     vec3 head=mix(hue,vec3(1.,.95,.86),.55*hot);
     vec4 ink=vec4(head,1.)*(.9*core*life*g);
-    vec4 speck=vec4(vec3(.30,.29,.29),1.)*(.38*core*life*(1.-g)*landed);
+    float tight=exp(-d*d/(.36*w*w));
+    vec4 speck=vec4(vec3(.30,.29,.29),1.)*(.3*tight*life*(1.-g)*landed);
     chipInk=over(ink,over(speck,chipInk));
   }
   if(uLight<.5){
-    vec3 c=vec3(.60,.70,.70)*E*.17+vec3(.22,.74,.76)*glow*1.25+vec3(.75,1.,1.)*smoothstep(.75,1.,glow)*.35+chipE;
+    vec3 c=vec3(.62,.72,.72)*E*.42+vec3(.22,.74,.76)*(glow*2.1+halo*.32)+vec3(.75,1.,1.)*smoothstep(.75,1.,glow)*.45+chipE
+      +chipHue(Tcut)*eCut*(1.4+2.4*smoothstep(900.,1250.,Tcut));
     c=tonemap(c,1.25);
     float m=max(c.r,max(c.g,c.b));
     float n=(hash12(gl_FragCoord.xy+fract(uTime*.61)*91.)+hash12(gl_FragCoord.yx*1.37+fract(uTime*.37)*57.)-1.)/255.;
     c=max(c+n*smoothstep(0.,1.5/255.,m),0.);
     gl_FragColor=vec4(c,max(c.r,max(c.g,c.b)));
   }else{
-    vec4 tint=vec4(vec3(.80,.93,.93),1.)*(.16*(1.-exp(-2.4*E)));
+    vec4 tint=vec4(vec3(.80,.93,.93),1.)*(.22*(1.-exp(-2.4*E)));
+    float ac=.94*(1.-exp(-2.6*eCut));
+    vec3 cutHue=mix(chipHue(Tcut),vec3(1.,.95,.82),.55*smoothstep(1050.,1260.,Tcut));
+    vec4 cutInk=vec4(cutHue,1.)*ac;
     float e=1.-exp(-2.2*glow);
     vec3 teal=mix(vec3(.16,.53,.55),vec3(.78,.96,.95),smoothstep(.62,.95,e));
     vec4 tealInk=vec4(teal,1.)*(.93*e);
-    vec4 ink=over(chipInk,over(tealInk,tint));
+    vec4 ink=over(chipInk,over(cutInk,over(tealInk,tint)));
     ink.rgb=min(ink.rgb,vec3(ink.a));
     float n=(hash12(gl_FragCoord.xy+fract(uTime*.61)*91.)+hash12(gl_FragCoord.yx*1.37+fract(uTime*.37)*57.)-1.)/255.;
     ink=max(ink+n*smoothstep(0.,1.5/255.,ink.a),0.);
@@ -1111,7 +1129,7 @@ void main(){
     });
     if (layer) {
       const active = ringEnv.x > 1e-3 || cutEnv.x > 1e-3 || chips.some((c) => c.age >= 0) || trail.some((v, j) => j % 4 === 2 && v > 1e-3);
-      if (active) layer.draw({ uTool: [st.x, st.y, st.z, 0], uTrail: trail, uChipA: chipA, uChipB: chipB, uLight: isLight() ? 1 : 0, uRing: ringEnv.x }, calm ? 0.8 : performance.now() / 1000);
+      if (active) layer.draw({ uTool: [st.x, st.y, st.z, cutEnv.x], uTrail: trail, uChipA: chipA, uChipB: chipB, uLight: isLight() ? 1 : 0, uRing: ringEnv.x }, calm ? 0.8 : performance.now() / 1000);
       else layer.clear();
     } else {
       chips.forEach((c, i) => {
@@ -1124,8 +1142,9 @@ void main(){
         el.setAttribute("cx", q[0].toFixed(2));
         el.setAttribute("cy", q[1].toFixed(2));
         el.setAttribute("r", "0.7");
-        el.setAttribute("fill", T > 560 ? hueAt(T) : "rgb(70,68,68)");
-        el.setAttribute("opacity", (1 - Math.min(Math.max((c.age - 1.35) / 0.45, 0), 1)).toFixed(2));
+        const glowing = Math.min(Math.max((T - 520) / 240, 0), 1);
+        el.setAttribute("fill", hueAt(Math.max(T, 520)));
+        el.setAttribute("opacity", ((0.12 + 0.88 * glowing) * (1 - Math.min(Math.max((c.age - 1.35) / 0.45, 0), 1))).toFixed(2));
       });
     }
     return ringEnv.x > 1e-3 && Math.abs(ringEnv.v) > 1e-4 || cutEnv.x > 1e-3 || chips.some((c) => c.age >= 0);
