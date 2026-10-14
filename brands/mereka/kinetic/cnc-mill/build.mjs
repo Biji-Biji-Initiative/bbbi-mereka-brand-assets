@@ -932,13 +932,22 @@ function live(D) {
     const pct = Math.round((Math.min(t, D.total) / D.total) * 100);
     const text = `X${fmt(st.x)} Y${fmt(-st.y)} Z${fmt(st.z - D.top)} · F${st.kind === 0 ? "max" : st.feed || 0} · ${what} · ${pct}%`;
     if (readout.textContent !== text) readout.textContent = text;
+    // The accessible value changes with the operation, not every frame.
+    const words = st.kind === -2 ? "finished mark" : st.op >= 0 && st.op < D.ops.length ? D.ops[st.op].name : "parked";
+    if (words !== spoken) {
+      spoken = words;
+      stage.setAttribute("aria-valuenow", String(pct));
+      stage.setAttribute("aria-valuetext", `${words}, ${pct}% of the job`);
+    }
   }
+  let spoken = "";
 
   // ---- Light: the LED ring's pool, the fresh groove's glow and hot chips (WebGL) ----
   const STOCK = D.stock, SPOIL = D.spoil;
   const stopsGlsl = D.chipStops.map(([t, c], i) => `STOPS[${i}]=vec4(${c.map((v) => v.toFixed(3)).join(",")},${t.toFixed(1)});`).join("");
   const FRAG = `
 uniform vec4 uTool;
+uniform vec4 uCutAt;
 uniform vec4 uTrail[32];
 uniform vec4 uChipA[${D.chips}];
 uniform vec4 uChipB[${D.chips}];
@@ -996,8 +1005,8 @@ void main(){
   glow*=onTop;
   halo*=onTop;
   // The cutting zone: the chip–tool contact glows where the tool meets the steel.
-  float dc=length(pTop.xy-uTool.xy);
-  float eCut=uTool.w*onTop*(exp(-pow(dc/2.6,2.))+.42*exp(-pow(dc/7.,2.)));
+  float dc=length(pTop.xy-uCutAt.xy);
+  float eCut=uCutAt.z*onTop*(exp(-pow(dc/2.6,2.))+.42*exp(-pow(dc/7.,2.)));
   float Tcut=560.+720.*clamp(eCut,0.,1.);
   // Chips: thrown off the cutting edge, falling under gravity, cooling where they land.
   vec3 chipE=vec3(0.);
@@ -1056,7 +1065,7 @@ void main(){
   }
 }`;
   const glCanvas = stage.querySelector(".cnc-gl");
-  const layer = typeof glLayer === "function" ? glLayer({ canvas: glCanvas, fragment: FRAG, view: [D.W, D.H], camera: glCamera(P), uniforms: ["uTool", "uTrail", "uChipA", "uChipB", "uLight", "uRing"] }) : null;
+  const layer = typeof glLayer === "function" ? glLayer({ canvas: glCanvas, fragment: FRAG, view: [D.W, D.H], camera: glCamera(P), uniforms: ["uTool", "uCutAt", "uTrail", "uChipA", "uChipB", "uLight", "uRing"] }) : null;
   if (layer) stage.setAttribute("data-gl", "");
   const isLight = () => (host.getAttribute("data-theme") || "dark") === "light";
   const trail = new Float32Array(32 * 4);
@@ -1095,11 +1104,13 @@ void main(){
     return `rgb(${c.map((v) => Math.round(v * 255)).join(",")})`;
   };
   let lastShown = NaN;
+  const cutAt = [0, 0];
   function light(st, t, dt, phase, calm) {
     const forward = !Number.isNaN(lastShown) && t > lastShown && t - lastShown < dt * D.speedup * 1.6 + 1e-6;
     lastShown = t;
     const cutting = st.kind >= 1 && st.z < D.top - 0.05 && phase !== "reset";
     settle(cutEnv, calm ? (st.kind >= 1 ? 1 : 0) : forward && cutting ? 1 : 0, dt, 0.18, calm);
+    if (cutting) { cutAt[0] = st.x; cutAt[1] = st.y; }
     settle(ringEnv, phase === "reset" || st.kind === -1 && phase !== "pre" && t <= 0 ? 0 : 1, dt, 0.35, calm);
     // Trail: where the tool was over the last 0.45 s of display, its heat falling with age.
     const step = 0.11;
@@ -1129,7 +1140,7 @@ void main(){
     });
     if (layer) {
       const active = ringEnv.x > 1e-3 || cutEnv.x > 1e-3 || chips.some((c) => c.age >= 0) || trail.some((v, j) => j % 4 === 2 && v > 1e-3);
-      if (active) layer.draw({ uTool: [st.x, st.y, st.z, cutEnv.x], uTrail: trail, uChipA: chipA, uChipB: chipB, uLight: isLight() ? 1 : 0, uRing: ringEnv.x }, calm ? 0.8 : performance.now() / 1000);
+      if (active) layer.draw({ uTool: [st.x, st.y, st.z, cutEnv.x], uCutAt: [cutAt[0], cutAt[1], cutEnv.x, 0], uTrail: trail, uChipA: chipA, uChipB: chipB, uLight: isLight() ? 1 : 0, uRing: ringEnv.x }, calm ? 0.8 : performance.now() / 1000);
       else layer.clear();
     } else {
       chips.forEach((c, i) => {
@@ -1215,8 +1226,8 @@ const CSS = `
 .cnc-stage:focus-visible{outline:1px solid var(--anatomy-muted);outline-offset:6px}
 .cnc-stage>svg,.cnc-stage>canvas{display:block;width:100%;height:auto}
 .cnc-stage>.cnc-layer{position:absolute;inset:0;height:100%!important;pointer-events:none}
-.iso-figure{--cnc-rim:#8a8a8f;--cnc-wall:#a9a9a6;--cnc-floor:#d6d6d2;--cnc-fresh:#2d898b;--cnc-pool:#e9f4f4;--cnc-led:#2d898b}
-.iso:not([data-theme="light"]) .iso-figure{--cnc-rim:#5c5c5c;--cnc-wall:#0b0b0b;--cnc-floor:#141414;--cnc-fresh:#3fb3b5;--cnc-pool:#2b3536;--cnc-led:#9fdcdd}
+.iso-figure{--cnc-rim:#8a8a8f;--cnc-wall:#a9a9a6;--cnc-floor:#d6d6d2;--cnc-fresh:#2d898b;--cnc-pool:#e9f4f4;--cnc-led:#26262a}
+.iso:not([data-theme="light"]) .iso-figure{--cnc-rim:#5c5c5c;--cnc-wall:#0b0b0b;--cnc-floor:#141414;--cnc-fresh:#3fb3b5;--cnc-pool:#2b3536;--cnc-led:#ffffff}
 .cnc-stroke{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:none!important}
 .cnc-rim{stroke:var(--cnc-rim)}.cnc-wall{stroke:var(--cnc-wall)}.cnc-floor{stroke:var(--cnc-floor)}.cnc-fresh{stroke:var(--cnc-fresh);opacity:.85}
 .cnc-pool-in{stop-color:var(--cnc-pool);stop-opacity:.9}.cnc-pool-out{stop-color:var(--cnc-pool);stop-opacity:0}
@@ -1236,7 +1247,7 @@ const plate = () => k.plateHtml({
     { mark: "raised", label: "Steel stock held by four step clamps on the spoilboard" },
     { mark: "edge", label: "Drag chains carry the cables to the gantry and the carriage" },
   ],
-  caption: `The toolpath is the brand outline itself. The spindle traces the joined body at ${FEED.cut} mm/min, 2 mm deep, then helixes into each dot at ${FEED.helix} mm/min and spirals out at a ${STEPOVER} mm stepover to a 3 mm pocket, the detached dot last. ${Math.round(cutLength)} mm of cut, plunges at ${FEED.plunge} mm/min and rapids at ${FEED.rapid} mm/min make a ${Math.floor(realSeconds / 60)} min ${Math.round(realSeconds % 60)} s job, shown here ${SPEEDUP}× faster. Gantry, carriage and Z positions all come from that one program, and the lead screws turn to match.`,
+  caption: `The toolpath is the brand outline itself. The spindle traces the joined body at ${FEED.cut} mm/min, 2 mm deep, then helixes into each dot at ${FEED.helix} mm/min and spirals out at a ${STEPOVER} mm stepover to a 3 mm pocket, the detached dot last. ${Math.round(cutLength)} mm of cut, plunges at ${FEED.plunge} mm/min and rapids at ${FEED.rapid} mm/min make a ${Math.floor(realSeconds / 60)} min ${Math.round(realSeconds % 60)} s job, shown here ${SPEEDUP}× faster. Gantry, carriage and Z positions all come from that one program, and the lead screws turn to match. The LED ring lights the stock, the fresh groove glows for a moment behind the tool, and chips leave the clockwise cutting edge, arc under gravity and cool from yellow to dark where they land.`,
   body: `<div class="iso-stage cnc-stage" tabindex="0" role="slider" aria-label="CNC mill milling the Mereka logomark. Hover across the figure to scrub the job; left and right arrows step between operations, Shift with an arrow jogs ten seconds, Home and End jump to the start and the finished mark, Space pauses." aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">${backSvg}<canvas class="cnc-layer cnc-gl" aria-hidden="true"></canvas>${frontSvg}</div>`,
 });
 
