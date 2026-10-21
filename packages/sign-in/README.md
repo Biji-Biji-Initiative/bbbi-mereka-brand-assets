@@ -25,23 +25,23 @@ your form, or an `onClick`.
 The repository is public, so you don't need a registry login. Always pin a tag.
 
 ```
-https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.0/packages/sign-in/sign-in-with-mereka.css
-https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.0/packages/sign-in/sign-in-with-mereka.js
-https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.0/packages/sign-in/registry/sign-in-with-mereka.json
-https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.0/packages/sign-in/registry/sign-in-with-mereka-native.json
+https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.1/packages/sign-in/sign-in-with-mereka.css
+https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.1/packages/sign-in/sign-in-with-mereka.js
+https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.1/packages/sign-in/registry/sign-in-with-mereka.json
+https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.1/packages/sign-in/registry/sign-in-with-mereka-native.json
 ```
 
 React apps copy the component in with shadcn. Each copied file begins with a version comment.
 
 ```sh
-npx shadcn@latest add https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.0/packages/sign-in/registry/sign-in-with-mereka.json
+npx shadcn@latest add https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.1/packages/sign-in/registry/sign-in-with-mereka.json
 # Expo / React Native
-npx shadcn@latest add https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.0/packages/sign-in/registry/sign-in-with-mereka-native.json
+npx shadcn@latest add https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.1/packages/sign-in/registry/sign-in-with-mereka-native.json
 ```
 
 The files land in `components/mereka/`: `sign-in-with-mereka.tsx`, `sign-in-with-mereka-submit.tsx`
 and `sign-in-with-mereka.css`. The component has no Tailwind or other dependencies, and it imports
-its CSS itself. `package.json` describes `@mereka/sign-in@0.1.0` so the kit can be published later.
+its CSS itself. `package.json` describes `@mereka/sign-in@0.1.1` so the kit can be published later.
 It is not published to any registry yet.
 
 ## 30-second quick starts
@@ -122,8 +122,8 @@ links. Then allow custom elements in the component:
 ### Django templates / plain HTML
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.0/packages/sign-in/sign-in-with-mereka.css">
-<script defer src="https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.0/packages/sign-in/sign-in-with-mereka.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.1/packages/sign-in/sign-in-with-mereka.css">
+<script defer src="https://cdn.jsdelivr.net/gh/Biji-Biji-Initiative/bbbi-mereka-brand-assets@sign-in-v0.1.1/packages/sign-in/sign-in-with-mereka.js"></script>
 
 <!-- A link (GET). The inner <a> still works if the script never loads. -->
 <mereka-signin size="lg" width="full"><a href="{% url 'oidc_authentication_init' %}">Sign in with Mereka</a></mereka-signin>

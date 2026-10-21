@@ -13,7 +13,7 @@ import {
 import Svg, { Circle, Path } from "react-native-svg";
 
 // <sign-in:generated> by scripts/build.mjs; do not edit by hand.
-export const SIGN_IN_VERSION = "0.1.0";
+export const SIGN_IN_VERSION = "0.1.1";
 export const SIGN_IN_LABELS = {
   signin: "Sign in with Mereka",
   continue: "Continue with Mereka",

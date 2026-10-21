@@ -2,7 +2,7 @@ import * as React from "react";
 import "../sign-in-with-mereka.css";
 
 // <sign-in:generated> by scripts/build.mjs; do not edit by hand.
-export const SIGN_IN_VERSION = "0.1.0";
+export const SIGN_IN_VERSION = "0.1.1";
 export const SIGN_IN_LABELS = {
   signin: "Sign in with Mereka",
   continue: "Continue with Mereka",
@@ -76,6 +76,13 @@ export function signInWithMerekaClassName({
     .join(" ");
 }
 
+/** A copy of `props` without `keys`, so kit-only props never reach the DOM element. */
+function omitProps<T extends object, K extends keyof T>(props: T, ...keys: K[]): Omit<T, K> {
+  const copy = { ...props };
+  for (const key of keys) delete copy[key];
+  return copy;
+}
+
 /** The Mereka logomark in currentColor. Do not recolour it independently of the label. */
 export function MerekaMark(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -109,7 +116,7 @@ export function SignInWithMereka(props: SignInWithMerekaProps) {
   }
 
   if (typeof props.href === "string") {
-    const { asChild: _a, ...anchor } = rest as Omit<SignInWithMerekaAnchorProps, Own>;
+    const anchor = omitProps(rest as Omit<SignInWithMerekaAnchorProps, Own>, "asChild");
     return (
       <a {...anchor} {...common} className={classes} aria-disabled={loading || undefined}>
         {content}
@@ -117,7 +124,7 @@ export function SignInWithMereka(props: SignInWithMerekaProps) {
     );
   }
 
-  const { asChild: _a, href: _h, disabled, type = "button", ...button } = rest as Omit<SignInWithMerekaButtonProps, Own>;
+  const { disabled, type = "button", ...button } = omitProps(rest as Omit<SignInWithMerekaButtonProps, Own>, "asChild", "href");
   return (
     <button {...button} {...common} type={type} className={classes} disabled={disabled || loading}>
       {content}
