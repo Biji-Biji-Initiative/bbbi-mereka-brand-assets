@@ -1,0 +1,241 @@
+/*
+ * @mereka/sign-in: the standard "Sign in with Mereka" button.
+ * Docs: https://github.com/Biji-Biji-Initiative/bbbi-mereka-brand-assets/tree/main/packages/sign-in
+ *
+ * Theme with the public custom properties (set them on the button or any ancestor):
+ *   --mereka-signin-bg, --mereka-signin-fg, --mereka-signin-border,
+ *   --mereka-signin-radius, --mereka-signin-font, --mereka-signin-ring,
+ *   --mereka-signin-height, --mereka-signin-font-size, --mereka-signin-mark-size
+ * The --_msi-* properties are internal; variants set them, apps should not.
+ */
+
+.mereka-signin {
+  /* Default: --dark --md --rect, matching the primary button on auth0.mereka.io. */
+  --_msi-bg: #202321;
+  --_msi-fg: #ffffff;
+  --_msi-border: var(--mereka-signin-bg, var(--_msi-bg));
+  --_msi-ring: #506652;
+  --_msi-hover-with: #ffffff;
+  --_msi-hover-mix: 12%;
+  --_msi-height: 2.75rem;
+  --_msi-pad: 1.125rem;
+  --_msi-font-size: 1rem;
+  --_msi-radius: 0.65rem;
+
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625em;
+  min-height: var(--mereka-signin-height, var(--_msi-height));
+  max-width: 100%;
+  margin: 0;
+  padding: 0.5em var(--_msi-pad);
+  border: 1px solid var(--mereka-signin-border, var(--_msi-border));
+  border-radius: var(--mereka-signin-radius, var(--_msi-radius));
+  background: var(--mereka-signin-bg, var(--_msi-bg));
+  color: var(--mereka-signin-fg, var(--_msi-fg));
+  font-family: var(
+    --mereka-signin-font,
+    Poppins, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+  );
+  font-size: var(--mereka-signin-font-size, var(--_msi-font-size));
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-align: center;
+  text-decoration: none;
+  text-transform: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mereka-signin:focus-visible {
+  outline: 3px solid var(--mereka-signin-ring, var(--_msi-ring));
+  outline-offset: 2px;
+}
+
+@supports (background: color-mix(in srgb, red 50%, blue)) {
+  .mereka-signin:hover:not(:disabled, [aria-disabled="true"], [aria-busy="true"]) {
+    background: color-mix(in srgb, var(--mereka-signin-bg, var(--_msi-bg)), var(--_msi-hover-with) var(--_msi-hover-mix));
+  }
+}
+
+.mereka-signin__icon {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.mereka-signin__mark {
+  display: block;
+  flex: none;
+  height: var(--mereka-signin-mark-size, 1.1em);
+  width: auto;
+  aspect-ratio: 427.76 / 342.13;
+  fill: currentColor;
+}
+
+.mereka-signin__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Variants */
+.mereka-signin--dark {
+  --_msi-bg: #202321;
+  --_msi-fg: #ffffff;
+}
+
+.mereka-signin--light {
+  --_msi-bg: #ffffff;
+  --_msi-fg: #202321;
+  --_msi-border: #dcded8;
+  --_msi-hover-with: #202321;
+  --_msi-hover-mix: 5%;
+}
+
+/* Mereka teal, deepened from #2d898b so white 16px text meets WCAG AA (5:1). */
+.mereka-signin--brand {
+  --_msi-bg: #267a7c;
+  --_msi-fg: #ffffff;
+  --_msi-hover-with: #000000;
+  --_msi-hover-mix: 15%;
+}
+
+/* --auto: ink on light pages, inverted on dark pages (.dark / [data-theme="dark"] ancestor or OS dark mode). */
+.mereka-signin--auto {
+  --_msi-bg: #202321;
+  --_msi-fg: #ffffff;
+}
+
+:where(.dark, [data-theme="dark"]) .mereka-signin--auto {
+  --_msi-bg: #f2f3ed;
+  --_msi-fg: #171b19;
+  --_msi-ring: #b4c9b1;
+  --_msi-hover-with: #171b19;
+  --_msi-hover-mix: 8%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light, [data-theme="light"]) .mereka-signin--auto:not(:where(.light, [data-theme="light"]) *) {
+    --_msi-bg: #f2f3ed;
+    --_msi-fg: #171b19;
+    --_msi-ring: #b4c9b1;
+    --_msi-hover-with: #171b19;
+    --_msi-hover-mix: 8%;
+  }
+}
+
+:where(.dark, [data-theme="dark"]) :is(.mereka-signin--light, .mereka-signin--brand) {
+  --_msi-ring: #b4c9b1;
+}
+
+/* Sizes: md is the 44px minimum tap target; lg matches the 3.25rem buttons on the hosted page. */
+.mereka-signin--sm {
+  --_msi-height: 2.25rem;
+  --_msi-pad: 0.875rem;
+  --_msi-font-size: 0.875rem;
+}
+
+.mereka-signin--md {
+  --_msi-height: 2.75rem;
+  --_msi-pad: 1.125rem;
+  --_msi-font-size: 1rem;
+}
+
+.mereka-signin--lg {
+  --_msi-height: 3.25rem;
+  --_msi-pad: 1.25rem;
+  --_msi-font-size: 1rem;
+}
+
+/* Shapes */
+.mereka-signin--rect {
+  --_msi-radius: 0.65rem;
+}
+
+.mereka-signin--pill {
+  --_msi-radius: 999px;
+}
+
+.mereka-signin--full {
+  display: flex;
+  width: 100%;
+}
+
+/* States */
+.mereka-signin:disabled,
+.mereka-signin[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mereka-signin[aria-busy="true"] {
+  cursor: progress;
+  opacity: 1;
+}
+
+a.mereka-signin:is([aria-disabled="true"], [aria-busy="true"]) {
+  pointer-events: none;
+}
+
+.mereka-signin[aria-busy="true"] .mereka-signin__mark {
+  visibility: hidden;
+}
+
+.mereka-signin[aria-busy="true"] .mereka-signin__icon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  width: 1.05em;
+  height: 1.05em;
+  margin: auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: mereka-signin-spin 0.7s linear infinite;
+}
+
+@keyframes mereka-signin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mereka-signin {
+    transition: none;
+  }
+
+  .mereka-signin[aria-busy="true"] .mereka-signin__icon::after {
+    animation-duration: 1.6s;
+  }
+}
+
+@media (forced-colors: active) {
+  .mereka-signin {
+    border-color: ButtonText;
+  }
+}
+
+/* <mereka-signin> host element (sign-in-with-mereka.js) */
+mereka-signin {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+mereka-signin[width="full"] {
+  display: block;
+}

@@ -1,0 +1,55 @@
+{
+  "name": "@mereka/sign-in",
+  "version": "0.1.0",
+  "private": false,
+  "description": "The standard \"Sign in with Mereka\" button: CSS, custom element, React, React Native and Open edX snippets.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Biji-Biji-Initiative/bbbi-mereka-brand-assets.git",
+    "directory": "packages/sign-in"
+  },
+  "type": "module",
+  "sideEffects": [
+    "*.css",
+    "./sign-in-with-mereka.js"
+  ],
+  "files": [
+    "mark.svg",
+    "mark.ts",
+    "sign-in-with-mereka.css",
+    "sign-in-with-mereka.js",
+    "react/",
+    "react-native/",
+    "openedx/",
+    "registry/",
+    "README.md"
+  ],
+  "exports": {
+    "./css": "./sign-in-with-mereka.css",
+    "./sign-in-with-mereka.css": "./sign-in-with-mereka.css",
+    "./element": "./sign-in-with-mereka.js",
+    "./react": "./react/index.ts",
+    "./react-native": "./react-native/SignInWithMereka.tsx",
+    "./mark": "./mark.ts",
+    "./mark.svg": "./mark.svg",
+    "./openedx/_mereka-signin.scss": "./openedx/_mereka-signin.scss",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18",
+    "react-native": ">=0.72",
+    "react-native-svg": ">=13"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true },
+    "react-dom": { "optional": true },
+    "react-native": { "optional": true },
+    "react-native-svg": { "optional": true }
+  }
+}
